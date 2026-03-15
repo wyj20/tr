@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>锁门大叔的值班日</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; margin-top: 50px; background-color: #f9f9f9;}
+        .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .result { font-size: 2.2em; font-weight: bold; margin: 30px 0; }
+        .work { color: #d9534f; } /* 红色上班 */
+        .rest { color: #5cb85c; } /* 绿色休息 */
+        .settings { margin-top: 40px; padding-top: 20px; border-top: 1px dashed #ccc; font-size: 0.9em; color: #666; text-align: left;}
+        input { padding: 8px; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; width: 80%; box-sizing: border-box; margin-top: 10px;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 style="color: #333; margin-bottom: 5px;">今天值班的是？</h2>
+        <div id="result" class="result">正在读取记忆...</div>
+        
+        <div class="settings">
+            <p>⚙️ <b>初始设置（只需操作一次）：</b></p>
+            <p>请选择任意一个你确定<b>锁门大叔值班</b>的日期，程序会自动记住它作为基准。</p>
+            <input type="date" id="baseDate" onchange="saveAndCalculate()">
+        </div>
+    </div>
+
+    <script>
+        // 这个函数负责保存你的设置并计算
+        function saveAndCalculate() {
+            const selectedDate = document.getElementById('baseDate').value;
+            if (!selectedDate) return;
+            
+            // ⭐️ 核心：把日期保存在浏览器的记忆里
+            localStorage.setItem('myWorkBaseDate', selectedDate);
+            
+            // 执行计算
+            calculate(selectedDate);
+        }
+
+        // 这个函数负责算天数
+        function calculate(baseDateStr) {
+            const baseDate = new Date(baseDateStr);
+            baseDate.setHours(0, 0, 0, 0);
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // 算相差天数
+            const diffTime = Math.abs(today - baseDate);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            const resultDiv = document.getElementById('result');
+            if (diffDays % 2 === 0) {
+                resultDiv.innerHTML = "<span class='work'>锁门大叔😭</span>";
+            } else {
+                resultDiv.innerHTML = "<span class='rest'>不锁门大叔🥳</span>";
+            }
+        }
+
+        // 页面打开时自动运行的部分
+        window.onload = function() {
+            // ⭐️ 核心：尝试从记忆里找出你之前设置的日期
+            const savedDate = localStorage.getItem('myWorkBaseDate');
+            
+            if (savedDate) {
+                // 如果找到了记忆，直接填入并告诉你今天上不上班
+                document.getElementById('baseDate').value = savedDate;
+                calculate(savedDate);
+            } else {
+                // 如果是第一次打开，没有记忆，就提示你设置
+                document.getElementById('result').innerHTML = "<span style='font-size: 0.6em; color: #999;'>请在下方完成首次设置 👇</span>";
+            }
+        }
+    </script>
+</body>
+</html>
