@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>锁门查询</title>
+    <title>我的排班表</title>
     <style>
         body { font-family: sans-serif; text-align: center; margin-top: 20px; background-color: #f9f9f9; padding-bottom: 20px;}
         .container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .result { font-size: 2em; font-weight: bold; margin: 20px 0; }
-        .work { color: #d9534f; } /* 红色上班文字 */
-        .rest { color: #5cb85c; } /* 绿色休息文字 */
+        .work { color: #d9534f; } 
+        .rest { color: #5cb85c; } 
         
         /* 日历样式 */
         .calendar-wrap { margin-top: 25px; border-top: 1px solid #eee; padding-top: 15px; }
@@ -19,24 +19,46 @@
         .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); font-size: 0.8em; color: #666; margin-bottom: 10px; }
         .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
         .day-cell { padding: 10px 0; border-radius: 5px; font-size: 0.9em; display: flex; align-items: center; justify-content: center; background-color: #f5f5f5; color: #ccc;}
-        
-        /* 日历颜色标记 */
-        .cal-work { background-color: #fde8e8; color: #d9534f; font-weight: bold; border: 1px solid #fad2d2;} /* 浅红背景 */
-        .cal-rest { background-color: #e8f5e9; color: #4caf50; font-weight: bold; border: 1px solid #c8e6c9;} /* 浅绿背景 */
-        .today-mark { border: 2px solid #007bff !important; box-sizing: border-box; } /* 蓝框标出今天 */
+        .cal-work { background-color: #fde8e8; color: #d9534f; font-weight: bold; border: 1px solid #fad2d2;} 
+        .cal-rest { background-color: #e8f5e9; color: #4caf50; font-weight: bold; border: 1px solid #c8e6c9;} 
+        .today-mark { border: 2px solid #007bff !important; box-sizing: border-box; } 
 
         /* 设置区域样式 */
         .settings { margin-top: 30px; padding-top: 20px; border-top: 1px dashed #ccc; font-size: 0.9em; color: #666; text-align: left;}
-        input[type="date"] { padding: 8px; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; width: 100%; box-sizing: border-box; margin-top: 10px; margin-bottom: 15px;}
+        input[type="date"] { padding: 8px; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; width: 100%; box-sizing: border-box; margin-top: 5px; margin-bottom: 15px;}
         input[type="number"] { padding: 8px; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; width: 60px; text-align: center; margin: 0 5px;}
         .row { margin-bottom: 15px; display: flex; align-items: center; justify-content: flex-start; }
-        .reset-btn { background-color: #f0ad4e; color: white; border: none; padding: 10px 15px; border-radius: 5px; font-size: 1em; cursor: pointer; width: 100%; box-sizing: border-box; margin-top: 10px;}
-        .reset-btn:active { background-color: #ec971f; }
+        
+        /* 按钮与卡片样式 */
+        .btn { border: none; padding: 10px 15px; border-radius: 5px; font-size: 0.9em; cursor: pointer; box-sizing: border-box; width: 100%;}
+        .btn-primary { background-color: #5bc0de; color: white; margin-top: 5px;}
+        .btn-primary:active { background-color: #31b0d5; }
+        .btn-warning { background-color: #f0ad4e; color: white; margin-top: 10px;}
+        .btn-warning:active { background-color: #ec971f; }
+        
+        .save-section { background-color: #f4f8fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bce8f1;}
+        
+        /* 标签排版 */
+        .tags-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; margin-bottom: 15px; }
+        .schedule-tag { 
+            background-color: #fff; border: 1px solid #5bc0de; color: #31708f; 
+            padding: 6px 12px; border-radius: 20px; font-size: 0.85em; cursor: pointer;
+            display: flex; align-items: center; gap: 8px; transition: all 0.2s;
+        }
+        /* 激活状态的标签 */
+        .schedule-tag.active { background-color: #5bc0de; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); border-color: #46b8da;}
+        .schedule-tag-text { flex-grow: 1; }
+        /* 删除小叉号 */
+        .delete-btn { 
+            color: #d9534f; font-weight: bold; font-size: 1.2em; line-height: 1; 
+            padding-left: 6px; border-left: 1px solid rgba(0,0,0,0.1); 
+        }
+        .schedule-tag.active .delete-btn { color: #fff; border-left-color: rgba(255,255,255,0.3); }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2 style="color: #333; margin-bottom: 5px;">今天是哪位大叔值班？</h2>
+        <h2 style="color: #333; margin-bottom: 5px;">今天要做什么？</h2>
         <div id="result" class="result">正在读取记忆...</div>
         
         <div class="calendar-wrap">
@@ -52,21 +74,133 @@
         </div>
         
         <div class="settings">
-            <p>⚙️ <b>大叔排班规律设置：</b></p>
+            
+            <div class="save-section">
+                <p style="margin-top: 0; color: #31708f; font-weight: bold; margin-bottom: 5px;">📁 我的排班方案</p>
+                <div id="tagsContainer" class="tags-container">
+                    </div>
+                <button class="btn btn-primary" onclick="saveCurrentConfig()">➕ 将当前参数保存为新方案</button>
+            </div>
+
+            <p>⚙️ <b>调整排班参数：</b></p>
             <div class="row">
-                上 <input type="number" id="workDays" value="1" min="1" onchange="saveAndCalculate()"> 天，
-                休 <input type="number" id="restDays" value="1" min="1" onchange="saveAndCalculate()"> 天
+                上 <input type="number" id="workDays" value="1" min="1" onchange="handleManualInput()"> 天，
+                休 <input type="number" id="restDays" value="1" min="1" onchange="handleManualInput()"> 天
             </div>
             <p style="font-size: 0.8em; margin-bottom: 5px;">选择周期内<b>第一天上班</b>的日期：</p>
-            <input type="date" id="baseDate" onchange="saveAndCalculate()">
-            <button class="reset-btn" onclick="resetSettings()">🔄 重置全部设置</button>
+            <input type="date" id="baseDate" onchange="handleManualInput()">
+            <button class="btn btn-warning" onclick="resetSettings()">🔄 清空当前参数</button>
         </div>
     </div>
 
     <script>
-        let currentDisplayDate = new Date(); // 用于跟踪日历当前显示的月份
+        let currentDisplayDate = new Date();
+        let activeConfigId = null; // 记录当前点亮的是哪个方案
 
-        function saveAndCalculate() {
+        // ------ 方案存档功能区 ------
+        function getSavedConfigs() {
+            return JSON.parse(localStorage.getItem('mySavedSchedules') || '[]');
+        }
+
+        function saveConfigList(list) {
+            localStorage.setItem('mySavedSchedules', JSON.stringify(list));
+        }
+
+        // 渲染可视化标签
+        function refreshTags() {
+            const list = getSavedConfigs();
+            const container = document.getElementById('tagsContainer');
+            container.innerHTML = '';
+            
+            if (list.length === 0) {
+                container.innerHTML = '<span style="color: #999; font-size: 0.8em;">暂无保存的方案，请在下方设置后点击保存。</span>';
+                return;
+            }
+
+            list.forEach(item => {
+                const tag = document.createElement('div');
+                // 判断是否是当前激活的方案
+                tag.className = 'schedule-tag' + (item.id === activeConfigId ? ' active' : '');
+                
+                // 方案名称文字 (点击加载)
+                const textSpan = document.createElement('span');
+                textSpan.className = 'schedule-tag-text';
+                textSpan.innerText = item.name;
+                textSpan.onclick = () => loadConfig(item.id);
+                
+                // 删除小叉号 (点击删除)
+                const delSpan = document.createElement('span');
+                delSpan.className = 'delete-btn';
+                delSpan.innerHTML = '&times;';
+                delSpan.onclick = (e) => {
+                    e.stopPropagation(); // 阻止触发外层的加载点击事件
+                    deleteConfig(item.id, item.name);
+                };
+                
+                tag.appendChild(textSpan);
+                tag.appendChild(delSpan);
+                container.appendChild(tag);
+            });
+        }
+
+        // 保存新方案
+        function saveCurrentConfig() {
+            const baseDate = document.getElementById('baseDate').value;
+            const workD = document.getElementById('workDays').value;
+            const restD = document.getElementById('restDays').value;
+            
+            if(!baseDate) { alert("请先在下方设置好'基准日期'！"); return; }
+
+            const name = prompt("给这个排班方案起个名字吧\n（例如：3月倒班）：");
+            if(!name) return;
+
+            const newId = Date.now().toString();
+            const newConfig = { id: newId, name, baseDate, workD, restD };
+            const list = getSavedConfigs();
+            list.push(newConfig);
+            saveConfigList(list);
+            
+            activeConfigId = newId; // 自动激活刚保存的方案
+            refreshTags();
+        }
+
+        // 加载选中的方案
+        function loadConfig(id) {
+            const list = getSavedConfigs();
+            const config = list.find(item => item.id === id);
+            if(config) {
+                activeConfigId = id; // 点亮这个标签
+                document.getElementById('baseDate').value = config.baseDate;
+                document.getElementById('workDays').value = config.workD;
+                document.getElementById('restDays').value = config.restD;
+                
+                refreshTags(); // 更新UI高亮
+                runCalculationAndSave(); // 执行计算刷新日历
+            }
+        }
+
+        // 删除方案
+        function deleteConfig(id, name) {
+            if(confirm(`确定要删除方案 [${name}] 吗？`)) {
+                let list = getSavedConfigs();
+                list = list.filter(item => item.id !== id);
+                saveConfigList(list);
+                
+                if (activeConfigId === id) activeConfigId = null; // 如果删的是当前点亮的，就熄灭它
+                refreshTags();
+            }
+        }
+        // -----------------------------
+
+        // 当用户手动修改输入框时触发
+        function handleManualInput() {
+            activeConfigId = null; // 手动修改了参数，说明脱离了既定方案，取消所有标签高亮
+            refreshTags();
+            runCalculationAndSave();
+        }
+
+        // ------ 原有核心计算与渲染区 ------
+        function runCalculationAndSave() {
             const selectedDate = document.getElementById('baseDate').value;
             const workD = parseInt(document.getElementById('workDays').value) || 1;
             const restD = parseInt(document.getElementById('restDays').value) || 1;
@@ -76,11 +210,11 @@
             localStorage.setItem('myWorkBaseDate', selectedDate);
             localStorage.setItem('myWorkDays', workD);
             localStorage.setItem('myRestDays', restD);
+            localStorage.setItem('myActiveConfigId', activeConfigId || ''); // 顺便记住点亮状态
             
             updateUI();
         }
 
-        // 统一更新主结果和日历
         function updateUI() {
             const savedDateStr = localStorage.getItem('myWorkBaseDate');
             const workD = parseInt(localStorage.getItem('myWorkDays')) || 1;
@@ -90,14 +224,12 @@
             renderCalendar(savedDateStr, workD, restD);
         }
 
-        // 仅仅计算“今天”并显示顶部大字
         function calculateToday(baseDateStr, workDays, restDays) {
             const resultDiv = document.getElementById('result');
             if (!baseDateStr) {
-                resultDiv.innerHTML = "<span style='font-size: 0.6em; color: #999;'>请在下方完成首次设置 👇</span>";
+                resultDiv.innerHTML = "<span style='font-size: 0.6em; color: #999;'>请在下方配置参数 👇</span>";
                 return;
             }
-
             const baseDate = new Date(baseDateStr);
             baseDate.setHours(0, 0, 0, 0);
             const today = new Date();
@@ -109,24 +241,23 @@
             const cycleDay = ((diffDays % totalCycle) + totalCycle) % totalCycle;
             
             if (cycleDay < workDays) {
-                resultDiv.innerHTML = "<span class='work'>锁门大叔😭</span>";
+                resultDiv.innerHTML = "<span class='work'>今天要上班 💼</span>";
             } else {
-                resultDiv.innerHTML = "<span class='rest'>不锁门大叔🥳</span>";
+                resultDiv.innerHTML = "<span class='rest'>今天休息 ☕️</span>";
             }
         }
 
-        // 渲染月历
         function renderCalendar(baseDateStr, workDays, restDays) {
             const calGrid = document.getElementById('calendarGrid');
             const monthLabel = document.getElementById('monthLabel');
-            calGrid.innerHTML = ''; // 清空旧日历
+            calGrid.innerHTML = ''; 
             
             const year = currentDisplayDate.getFullYear();
             const month = currentDisplayDate.getMonth();
             monthLabel.innerText = `${year}年 ${month + 1}月`;
             
-            const firstDay = new Date(year, month, 1).getDay(); // 本月第一天是星期几
-            const daysInMonth = new Date(year, month + 1, 0).getDate(); // 本月有多少天
+            const firstDay = new Date(year, month, 1).getDay(); 
+            const daysInMonth = new Date(year, month + 1, 0).getDate(); 
             
             const todayReal = new Date();
             todayReal.setHours(0, 0, 0, 0);
@@ -135,13 +266,10 @@
             if(baseDate) baseDate.setHours(0, 0, 0, 0);
             const totalCycle = workDays + restDays;
 
-            // 填充月初的空白格子
             for (let i = 0; i < firstDay; i++) {
-                let emptyDiv = document.createElement('div');
-                calGrid.appendChild(emptyDiv);
+                calGrid.appendChild(document.createElement('div'));
             }
 
-            // 填充日期
             for (let i = 1; i <= daysInMonth; i++) {
                 let dayDiv = document.createElement('div');
                 dayDiv.className = 'day-cell';
@@ -150,12 +278,10 @@
                 let currentDate = new Date(year, month, i);
                 currentDate.setHours(0, 0, 0, 0);
                 
-                // 标记今天（加蓝框）
                 if (currentDate.getTime() === todayReal.getTime()) {
                     dayDiv.classList.add('today-mark');
                 }
 
-                // 如果已经设置了基准日，就开始染色
                 if (baseDate) {
                     const diffTime = currentDate - baseDate;
                     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -167,38 +293,42 @@
                         dayDiv.classList.add('cal-rest');
                     }
                 }
-                
                 calGrid.appendChild(dayDiv);
             }
         }
 
-        // 切换月份按钮的功能
         function changeMonth(offset) {
             currentDisplayDate.setMonth(currentDisplayDate.getMonth() + offset);
-            updateUI(); // 重新渲染界面
+            updateUI(); 
         }
 
         function resetSettings() {
             localStorage.removeItem('myWorkBaseDate');
             localStorage.removeItem('myWorkDays');
             localStorage.removeItem('myRestDays');
+            localStorage.removeItem('myActiveConfigId');
             
             document.getElementById('baseDate').value = '';
             document.getElementById('workDays').value = '1';
             document.getElementById('restDays').value = '1';
+            activeConfigId = null;
             
-            currentDisplayDate = new Date(); // 重置回当前月
+            currentDisplayDate = new Date();
+            refreshTags();
             updateUI();
         }
 
         window.onload = function() {
+            // 恢复记忆的点亮状态
+            activeConfigId = localStorage.getItem('myActiveConfigId') || null;
+            refreshTags();
+            
             const savedDate = localStorage.getItem('myWorkBaseDate');
             if (savedDate) {
                 document.getElementById('baseDate').value = savedDate;
                 document.getElementById('workDays').value = localStorage.getItem('myWorkDays') || '1';
                 document.getElementById('restDays').value = localStorage.getItem('myRestDays') || '1';
             }
-            // 无论有没有记忆，都先把日历和主界面画出来
             updateUI();
         }
     </script>
